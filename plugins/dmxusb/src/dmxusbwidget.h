@@ -21,6 +21,8 @@
 #ifndef DMXUSBWIDGET_H
 #define DMXUSBWIDGET_H
 
+#include "dmxinterface.h"
+
 #if defined(FTD2XX)
   #include "ftd2xx-interface.h"
 #endif
