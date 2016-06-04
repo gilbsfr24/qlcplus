@@ -31,12 +31,7 @@ TRANSLATIONS += HUE_pt_BR.ts
 TRANSLATIONS += HUE_ca_ES.ts
 TRANSLATIONS += HUE_ja_JP.ts
 
-HEADERS += ../interfaces/qlcioplugin.h \
-    libhue/light.h \
-    libhue/huebridgeconnection.h \
-    libhue/lightinterface.h \
-    libhue/hueobject.h \
-    libhue/discovery.h
+HEADERS += ../interfaces/qlcioplugin.h
 HEADERS += huepacketizer.h \
            huecontroller.h \
            hueplugin.h \
@@ -44,11 +39,7 @@ HEADERS += huepacketizer.h \
 
 FORMS += configurehue.ui
 
-SOURCES += ../interfaces/qlcioplugin.cpp \
-    libhue/light.cpp \
-    libhue/huebridgeconnection.cpp \
-    libhue/hueobject.cpp \
-    libhue/discovery.cpp
+SOURCES += ../interfaces/qlcioplugin.cpp
 SOURCES += huepacketizer.cpp \
            huecontroller.cpp \
            hueplugin.cpp \

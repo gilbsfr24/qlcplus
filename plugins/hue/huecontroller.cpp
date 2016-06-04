@@ -284,50 +284,6 @@ quint16 HUEController::getHash(QString path)
     return hash;
 }
 
-/*
-void MainWindow::put4(QVariantMap postdata)
-{
-    QTcpSocket *socket = new QTcpSocket(this);
-
-    socket->connectToHost("192.168.1.201", 80);
-
-    if(socket->waitForConnected(1000))
-    {
-        qDebug() << "Connected!";
-        QString baseString = "";
-            baseString.append(QString("PUT /api/newdeveloper/lights/3/state HTTP/1.1\r\n").toUtf8());
-            baseString.append(QString("192.168.1.201\r\n").toUtf8());
-            baseString.append(QString("User-Agent: My app name v0.1\r\n").toUtf8());
-            baseString.append(QString("X-Custom-User-Agent: My app name v0.1\r\n").toUtf8());
-            baseString.append(QString("Content-Type: application/json\r\n").toUtf8());
-
-            //QString jsonString = "{\"bri\":64,\"hue\":54675,\"on\":true,\"sat\":254,\"transitiontime\":1}";
-            //QByteArray json = jsonString.toUtf8();
-            QJsonDocument jsonDoc = QJsonDocument::fromVariant(postdata);
-            QByteArray json = jsonDoc.toJson(QJsonDocument::Compact);
-
-            baseString.append(QString("Content-Length:").toUtf8());
-            baseString.append(QString::number(json.length()));
-            baseString.append("\r\n").toUtf8();
-            baseString.append(QString("\r\n").toUtf8());
-            baseString.append(json);
-
-            socket->write(baseString.toUtf8());
-            socket->waitForBytesWritten(500);
-        socket->waitForReadyRead(1000);
-
-        qDebug() << "Reading: " << socket->bytesAvailable();
-        qDebug() << socket->readAll();
-        // close the connection
-        socket->close();
-    }
-    else
-    {
-        qDebug() << "Not connected!";
-    }
-}
-*/
-
 void HUEController::sendDmx(const quint32 universe, const QByteArray &dmxData)
 {
     QMutexLocker locker(&m_dataMutex);
@@ -356,7 +312,7 @@ void HUEController::sendDmx(const quint32 universe, const QByteArray &dmxData)
 
     for (int i = 0; i < dmxData.length(); i++) //4 canaux par peripherique
     { bool modif = false;
-        int r,g,b,bri,light = i / 4 +1;
+        quint8 r,g,b,bri,light = i / 4 +1;
         r = dmxData[i];
         if  (dmxData[i] != dmxValues->at(i)) {
            dmxValues->replace(i, 1, (const char *)(dmxData.data() + i), 1);
@@ -403,16 +359,19 @@ void HUEController::sendDmx(const quint32 universe, const QByteArray &dmxData)
                 baseString.append(QString::number(light).toUtf8());
                 baseString.append(QString("/state HTTP/1.1\r\n").toUtf8());
                 baseString.append(outAddress.toString().toUtf8());
-                //baseString.append(QString("\r\nUser-Agent: My app name v0.1\r\n").toUtf8());
-                //baseString.append(QString("X-Custom-User-Agent: My app name v0.1\r\n").toUtf8());
                 baseString.append(QString("Content-Type: application/json\r\n").toUtf8());
 
-                QString jsonString = "{\"bri\":";
-                jsonString.append(QString::number(bri));
-                jsonString.append(QString(",\"hue\":"));
-                jsonString.append(QString::number(hue));
-                jsonString.append(QString(",\"on\":true,\"sat\":"));
-                jsonString.append(QString::number(sat));
+                QString jsonString = "{\"on\":";
+                if (bri<1) {
+                    jsonString.append(QString("false"));
+                } else {
+                    jsonString.append(QString("true,\"bri\":"));
+                    jsonString.append(QString::number(bri));
+                    jsonString.append(QString(",\"hue\":"));
+                    jsonString.append(QString::number(hue));
+                    jsonString.append(QString(",\"sat\":"));
+                    jsonString.append(QString::number(sat));
+                 }
                 jsonString.append(QString(",\"transitiontime\":0}"));
                 m_lastCmd = QString::number(light) +" "+jsonString;
                 m_lastCmd.append("<br>");
@@ -428,12 +387,11 @@ void HUEController::sendDmx(const quint32 universe, const QByteArray &dmxData)
                 baseString.append(json);
 
                 m_outputSocket->write(baseString.toUtf8());
-                m_outputSocket->waitForBytesWritten(100);
-                m_outputSocket->waitForReadyRead(100);
+                m_outputSocket->waitForBytesWritten(50);
+//                m_outputSocket->waitForReadyRead(50);
 
             //qDebug() << "Reading: " << socket->bytesAvailable();
-            //qDebug() <<
-                m_outputSocket->readAll();
+ //           qDebug() <<  m_outputSocket->readAll();
             m_outputSocket->close();
 
 
