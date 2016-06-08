@@ -24,6 +24,9 @@
 #include <QDebug>
 #include <QColor>
 
+#define TRANSMIT_2CHANNELS    "2Channels"
+#define TRANSMIT_4CHANNELS "4Channels"
+
 HUEController::HUEController(QString ipaddr, Type type, quint32 line, QObject *parent)
     : QObject(parent)
 {
@@ -80,6 +83,7 @@ void HUEController::addUniverse(quint32 universe, HUEController::Type type)
         {
             info.feedbackAddress = QHostAddress::Null;
             info.outputAddress = QHostAddress::Null;
+            info.outputTransmissionMode = fourChannels;
             info.outputUser = "newdeveloper";
         }
         info.feedbackPort = 9000 + universe;
@@ -214,6 +218,38 @@ bool HUEController::setOutputPort(quint32 universe, quint16 port)
 
     return port == 80;
 }
+bool HUEController::setOutputTransmissionMode(quint32 universe, HUEController::TransmissionMode mode)
+{
+    if (m_universeMap.contains(universe) == false)
+        return false;
+
+    QMutexLocker locker(&m_dataMutex);
+    m_universeMap[universe].outputTransmissionMode = int(mode);
+    return mode == HUEController::fourChannels;
+}
+
+QString HUEController::transmissionModeToString(HUEController::TransmissionMode mode)
+{
+    switch (mode)
+    {
+        default:
+        case fourChannels:
+            return QString(TRANSMIT_4CHANNELS);
+        break;
+        case twoChannels:
+            return QString(TRANSMIT_2CHANNELS);
+        break;
+    }
+}
+
+HUEController::TransmissionMode HUEController::stringToTransmissionMode(const QString &mode)
+{
+    if (mode == QString(TRANSMIT_2CHANNELS))
+        return twoChannels;
+    else
+        return fourChannels;
+}
+
 bool HUEController::setOutputUser(quint32 universe, QString user)
 {
     if (m_universeMap.contains(universe) == false)
@@ -290,6 +326,8 @@ void HUEController::sendDmx(const quint32 universe, const QByteArray &dmxData)
     QByteArray dmxPacket;
     QHostAddress outAddress = QHostAddress::Null;
     quint32 outPort = 80;
+    int mode=0;
+    int imode=0;
 
     QString resHex;
     QString resDec;
@@ -304,7 +342,9 @@ void HUEController::sendDmx(const quint32 universe, const QByteArray &dmxData)
     {
         outAddress = m_universeMap[universe].outputAddress;
         outPort = m_universeMap[universe].outputPort;
+        mode = m_universeMap[universe].outputTransmissionMode;
     }
+    if (mode == int(HUEController::fourChannels)) imode=4; else imode=2;
 
     if (m_dmxValuesMap.contains(universe) == false)
         m_dmxValuesMap[universe] = new QByteArray(512, 0);
@@ -312,19 +352,21 @@ void HUEController::sendDmx(const quint32 universe, const QByteArray &dmxData)
 
     for (int i = 0; i < dmxData.length(); i++) //4 canaux par peripherique
     { bool modif = false;
-        quint8 r,g,b,bri,light = i / 4 +1;
-        r = dmxData[i];
-        if  (dmxData[i] != dmxValues->at(i)) {
-           dmxValues->replace(i, 1, (const char *)(dmxData.data() + i), 1);
-           modif = true;
+        quint8 r=0,g=0,b=0,bri,light = i / imode +1;
+        if (imode==4){
+            r = dmxData[i];
+            if  (dmxData[i] != dmxValues->at(i)) {
+               dmxValues->replace(i, 1, (const char *)(dmxData.data() + i), 1);
+               modif = true;
+            }
+            i++;
+            g = dmxData[i];
+            if  (dmxData[i] != dmxValues->at(i)) {
+               dmxValues->replace(i, 1, (const char *)(dmxData.data() + i), 1);
+               modif = true;
+            }
+            i++;
         }
-        i++;
-        g = dmxData[i];
-        if  (dmxData[i] != dmxValues->at(i)) {
-           dmxValues->replace(i, 1, (const char *)(dmxData.data() + i), 1);
-           modif = true;
-        }
-        i++;
         b = dmxData[i];
         if  (dmxData[i] != dmxValues->at(i)) {
            dmxValues->replace(i, 1, (const char *)(dmxData.data() + i), 1);
@@ -339,9 +381,22 @@ void HUEController::sendDmx(const quint32 universe, const QByteArray &dmxData)
 
         if (modif){
             QColor c= QColor::fromRgb(r,g,b);
-            quint16 hue = c.hue() * 65535 / 360;
-            quint8 sat = c.saturation();
-
+            quint16 hue;
+            quint8 sat;
+            if (imode==4) {
+                hue = c.hue() * 65535 / 360;
+                sat = c.saturation();
+            } else {
+                if (b< 16) { hue = 0; sat = 254; } // red
+                else if (b< 32) { hue = 26205; sat = 254; } //green
+                else if (b< 48) { hue = 45518; sat = 254; } //blue
+                else if (b< 64) { hue = 8000; sat = 254; } //orange
+                else if (b< 80) { hue = 26205; sat = 254; } //light green
+                else if (b< 96) { hue = 42803; sat = 254; } //cyan
+                else if (b< 112) { hue = 19136; sat = 254; } //yellow
+                else if (b< 128) { hue = 51684; sat = 254; } //mangenta
+                else  { hue = 40677; sat = 4; } //white
+            }
 
             //m_packetizer->setupHUEDmx(dmxPacket, universe, i, dmxData[i]);
             qint64 sent =0;

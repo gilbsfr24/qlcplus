@@ -41,6 +41,7 @@ typedef struct
 #define HUE_FEEDBACKPORT "feedbackPort"
 #define HUE_OUTPUTIP "outputIP"
 #define HUE_OUTPUTPORT "outputPort"
+#define HUE_TRANSMITMODE "transmitMode"
 #define HUE_OUTPUTUSER "outputUser"
 
 

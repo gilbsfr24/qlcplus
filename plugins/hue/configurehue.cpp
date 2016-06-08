@@ -30,10 +30,9 @@
 
 #define KMapColumnInterface     0
 #define KMapColumnUniverse      1
-//#define KMapColumnInputPort     2
 #define KMapColumnOutputAddress 2
-//#define KMapColumnOutputPort    4
-#define KMapColumnOutputUser 3
+#define KMapColumnTransmitMode  3
+#define KMapColumnOutputUser    4
 
 #define PROP_UNIVERSE (Qt::UserRole + 0)
 #define PROP_LINE (Qt::UserRole + 1)
@@ -164,6 +163,13 @@ void ConfigureHUE::fillMappingTree()
                         IPwidget = new QLineEdit(info->outputAddress.toString());
                     m_uniMapTree->setItemWidget(item, KMapColumnOutputAddress, IPwidget);
 
+                    QComboBox *transCombo = new QComboBox(this);
+                    transCombo->addItem(tr("4Channels"));
+                    transCombo->addItem(tr("2Channels"));
+                    if (info->outputTransmissionMode == HUEController::twoChannels)
+                        transCombo->setCurrentIndex(1);
+                    m_uniMapTree->setItemWidget(item, KMapColumnTransmitMode, transCombo);
+
                     QWidget *USERwidget;
                     if (info->outputAddress == QHostAddress::Null)
                         USERwidget = new QLineEdit("newdeveloper");
@@ -182,9 +188,8 @@ void ConfigureHUE::fillMappingTree()
 
     m_uniMapTree->resizeColumnToContents(KMapColumnInterface);
     m_uniMapTree->resizeColumnToContents(KMapColumnUniverse);
-//    m_uniMapTree->resizeColumnToContents(KMapColumnInputPort);
     m_uniMapTree->resizeColumnToContents(KMapColumnOutputAddress);
-//    m_uniMapTree->resizeColumnToContents(KMapColumnOutputPort);
+    m_uniMapTree->resizeColumnToContents(KMapColumnTransmitMode);
     m_uniMapTree->resizeColumnToContents(KMapColumnOutputUser);
 }
 
@@ -243,6 +248,14 @@ void ConfigureHUE::accept()
             //    else
             //        m_plugin->setParameter(universe, line, cap, HUE_OUTPUTPORT, outSpin->value());
             //}
+            QComboBox* transCombo = qobject_cast<QComboBox*>(m_uniMapTree->itemWidget(item, KMapColumnTransmitMode));
+            if(transCombo->currentIndex() == 1)
+                m_plugin->setParameter(universe, line, cap, HUE_TRANSMITMODE,
+                        HUEController::transmissionModeToString(HUEController::twoChannels));
+            else
+                m_plugin->setParameter(universe, line, cap, HUE_TRANSMITMODE,
+                        HUEController::transmissionModeToString(HUEController::fourChannels));
+
             QLineEdit *userEdit = qobject_cast<QLineEdit*>(m_uniMapTree->itemWidget(item, KMapColumnOutputUser));
             if (userEdit != NULL)
             {

@@ -39,6 +39,7 @@ typedef struct
 
     QHostAddress outputAddress;
     quint16 outputPort;
+    int outputTransmissionMode;
     QString outputUser;
 
     // cache of the HUE paths with multiple values, used to correctly
@@ -56,6 +57,8 @@ class HUEController : public QObject
      *********************************************************************/
 public:
     enum Type { Unknown = 0x0, Input = 0x01, Output = 0x02 };
+
+    enum TransmissionMode { twoChannels, fourChannels};
 
     HUEController(QString ipaddr,
                    Type type, quint32 line, QObject *parent = 0);
@@ -93,6 +96,19 @@ public:
      *  for the given universe.
      *  Return true if this restores default output port */
     bool setOutputPort(quint32 universe, quint16 port);
+
+// TODO: commentaire
+    /** Set the transmission mode of the ArtNet DMX packets over the network.
+     *  It can be 'Full', which transmits always 512 channels, or
+     *  'Partial', which transmits only the channels actually used in a
+     *  universe */
+    bool setOutputTransmissionMode(quint32 universe, TransmissionMode mode);
+
+    /** Converts a TransmissionMode value into a human readable string */
+    static QString transmissionModeToString(TransmissionMode mode);
+
+    /** Converts a human readable string into a TransmissionMode value */
+    static TransmissionMode stringToTransmissionMode(const QString& mode);
 
     bool setOutputUser(quint32 universe, QString user);
 

@@ -327,6 +327,8 @@ void HUEPlugin::setParameter(quint32 universe, quint32 line, Capability type,
         unset = controller->setOutputIPAddress(universe, value.toString());
     else if (name == HUE_OUTPUTPORT)
         unset = controller->setOutputPort(universe, value.toUInt());
+    else if (name == HUE_TRANSMITMODE)
+        unset = controller->setOutputTransmissionMode(universe, HUEController::stringToTransmissionMode(value.toString()));
     else if (name == HUE_OUTPUTUSER)
         unset = controller->setOutputUser(universe, value.toString());
     else
